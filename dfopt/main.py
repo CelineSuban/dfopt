@@ -35,6 +35,7 @@ class Rosenbrock:
         return self.count
 
 
+# adapted from Introduction to Derivative Free Optimization by Andrew R. Conn, Katya Scheinberg, and Luis Nunes
 def coordinate_search(f, oldpt, d, noiter):
     alpha = 1
     plot = []
@@ -77,11 +78,20 @@ def coordinate_search(f, oldpt, d, noiter):
     return plot, suc
 
 
+# adapted from Introduction to Derivative Free Optimization by Andrew R. Conn, Katya Scheinberg, and Luis Nunes
 def directional_direct_search(f, x, d, noiter):
     alpha = 1
     oldpt = x[0]
     plot = []
     suc = []
+    pts = []
+
+    # calculating and storing the initial point's values
+    oldrew, oldsuc = f(x[0], returnsuc=True)
+    print("1")
+    plot.append(oldrew)
+    suc.append(oldsuc)
+    pts.append(oldpt)
 
     while f.retcount() < noiter:
         successful = False
@@ -89,22 +99,24 @@ def directional_direct_search(f, x, d, noiter):
         # going through all the points in x until a successful point is found
         # search step
         for i in range(x.shape[0]):
-            if f.retcount() <= noiter-2 and successful == False:
+            if f.retcount() <= noiter - 3 and successful == False:
 
                 # remember you need bic.py to return the success here, so pass True to returnsuc
-                temp, suc1 = f(x[i], True)
-                temp1, suc2 = f(oldpt, True)
-                plot.append(temp1)
-                suc.append(suc2)
+                newrew, newsuc = f(x[i], returnsuc=True)
 
-                if temp < temp1:
+                # plotting the better point, which is saved as oldpt
+                if newrew < oldrew:
                     successful = True
                     oldpt = x[i]
-                    plot.append(temp)
-                    suc.append(suc1)
+                    oldrew = newrew
+                    oldsuc = newsuc
+                    plot.append(newrew)
+                    suc.append(newsuc)
+                    pts.append(x[i])
                 else:
-                    plot.append(temp1)
-                    suc.append(suc2)
+                    plot.append(oldrew)
+                    suc.append(oldsuc)
+                    pts.append(oldpt)
 
         # poll step done is search step fails
         if not successful:
@@ -112,25 +124,25 @@ def directional_direct_search(f, x, d, noiter):
 
                 # going through 4 poll vectors per point, using opportunistic polling
                 for j in range(d.shape[0]):
-                    if f.retcount() <= noiter-2 and successful == False:
+                    if f.retcount() <= noiter - 3 and successful == False:
 
                         newpt = oldpt + alpha * d[j, :]
 
-                        # remember you need bic.py to return the success here, so pass True to returnsuc
-                        temp, suc1 = f(newpt, True)
-                        temp1, suc2 = f(oldpt, True)
-                        plot.append(temp1)
-                        suc.append(suc2)
+                        newrew, newsuc = f(newpt, returnsuc=True)
 
-                        # we find a successful point and set the old point to the this new point
-                        if temp < temp1:
-                            oldpt = newpt
+                        # plotting the better point, which is saved as oldpt
+                        if newrew < oldrew:
                             successful = True
-                            plot.append(temp)
-                            suc.append(suc1)
+                            oldpt = newpt
+                            oldrew = newrew
+                            oldsuc = newsuc
+                            plot.append(newrew)
+                            suc.append(newsuc)
+                            pts.append(newpt)
                         else:
-                            plot.append(temp1)
-                            suc.append(suc2)
+                            plot.append(oldrew)
+                            suc.append(oldsuc)
+                            pts.append(oldpt)
 
         # mesh parameter update
         # if the iteration was not successful we decrease alpha and iterate with the same point
@@ -140,7 +152,7 @@ def directional_direct_search(f, x, d, noiter):
         # generating the poll points which are on the mesh centered around oldpt
         x = np.random.randint(1, 5, size=d.shape) * alpha * d + oldpt[None, :]
 
-    return plot, suc
+    return plot, suc, pts
 
 
 # can probably remove Rosenbrck and optimization code
@@ -283,7 +295,7 @@ def coordinate(a, dim, d, noiter, noruns, plot, suclist, funeval):
     print(suclist)
 
 
-def direct(n, dim, d, noiter, noruns, plot, suclist, funeval):
+def direct(n, dim, d, noiter, noruns, plot, suclist, funeval, points):
     # n is the number of points, and b is the array to store these points, each having dimension dim
     b = np.zeros((n, dim))
 
@@ -297,27 +309,32 @@ def direct(n, dim, d, noiter, noruns, plot, suclist, funeval):
             for c in range(dim):
                 b[e][c] = random.uniform(-2, 2)
 
-        tempplt, tempsuc = directional_direct_search(bic_fun, b, d, noiter)
+        tempplt, tempsuc, temppts = directional_direct_search(bic_fun, b, d, noiter)
         plot.append(tempplt)
         funeval.append(bic_fun.retcount())
         suclist.append(tempsuc.copy())
+        points.append(temppts)
 
         print(i)
         print(tempsuc)
         print(bic_fun.retcount())  # retcount should equal noiter
         print(tempplt)
+        print(temppts)
 
     # creating a file per list of values to be stored
-    np.save('successratedirectional.npy', suclist)
-    np.save('functionevaluationsdirectional.npy', funeval)
-    np.save('rewardsdirectional.npy', plot)
+    np.save('150successratedirectional.npy', suclist)
+    np.save('150functionevaluationsdirectional.npy', funeval)
+    np.save('150rewardsdirectional.npy', plot)
+    np.save('150pointsdirectional.npy', points)
 
     # printing the final list of all 3 values
     print(funeval)
     print(plot)
     print(suclist)
+    print(points)
 
 
+# adapted from https://github.com/maxhuettenrauch/MORE
 def MORE(dim, noiter, noruns, plot, suclist, funeval):
     from more.gauss_full_cov import GaussFullCov
     from more.quad_model import QuadModelSubBLR
@@ -424,6 +441,7 @@ def MORE(dim, noiter, noruns, plot, suclist, funeval):
     print(suclist)
 
 
+# taken from https://www.zhangzk.net/software.html
 def NEWUOA(dim, noiter, noruns, plot, suclist, funeval):
     # executes Powell NEWUOA for noruns runs
     for rep in range(noruns):
@@ -495,6 +513,7 @@ def NEWUOA(dim, noiter, noruns, plot, suclist, funeval):
     print(suclistnew)
 
 
+# taken from https://facebookresearch.github.io/nevergrad/optimizers_ref.html#optimizers (at very bottom of page)
 def cGA(dim, noiter, noruns, plot, suclist, funeval):
 
     # executes GA for noruns runs
@@ -525,6 +544,7 @@ def cGA(dim, noiter, noruns, plot, suclist, funeval):
     print(suclist)
 
 
+# adapted from https://github.com/CMA-ES/pycma
 def CMA(b, dim, noiter, noruns, plot, suclist, funeval):
     # executes CMA-ES for noruns runs
     for rep in range(noruns):
@@ -596,6 +616,7 @@ if __name__ == "__main__":
     plot = []
     suclist = []
     funeval = []
+    points = []
 
     # generating the maximal basis for the given number of dimensions
     d = np.zeros((dim * 2, dim))
@@ -631,8 +652,8 @@ if __name__ == "__main__":
         elif selection == "2":
             noruns = int(input("Please enter how many runs you want to run: "))
             noiter = int(input("Please enter how many iterations you want to run: "))
-            nopts = input("Please enter how many points you want to generate per iteration: ")
-            direct(nopts, dim, d, noiter, noruns, plot, suclist, funeval)
+            nopts = int(input("Please enter how many points you want to generate per iteration: "))
+            direct(nopts, dim, d, noiter, noruns, plot, suclist, funeval, points)
 
         elif selection == "3":
             noruns = int(input("Please enter how many runs you want to run: "))
@@ -655,6 +676,7 @@ if __name__ == "__main__":
             CMA(a, dim, noiter, noruns, plot, suclist, funeval)
 
         elif selection == "7":
+            # if you want to plot given data, use noiter = 500
             noiter = int(input("Please enter how many iterations you have run for the algorithms: "))
 
             # note that if that if you change the below variables, you must also change them in the MORE code
