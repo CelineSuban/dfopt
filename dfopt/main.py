@@ -93,7 +93,7 @@ def directional_direct_search(f, x, d, noiter):
     suc.append(oldsuc)
     pts.append(oldpt)
 
-    while f.retcount() < noiter:
+    while f.retcount() <= noiter-3:
         successful = False
 
         # going through all the points in x until a successful point is found
@@ -103,7 +103,7 @@ def directional_direct_search(f, x, d, noiter):
 
                 # remember you need bic.py to return the success here, so pass True to returnsuc
                 newrew, newsuc = f(x[i], returnsuc=True)
-
+                print("plus 1")
                 # plotting the better point, which is saved as oldpt
                 if newrew < oldrew:
                     successful = True
@@ -129,7 +129,7 @@ def directional_direct_search(f, x, d, noiter):
                         newpt = oldpt + alpha * d[j, :]
 
                         newrew, newsuc = f(newpt, returnsuc=True)
-
+                        print("plus 1")
                         # plotting the better point, which is saved as oldpt
                         if newrew < oldrew:
                             successful = True
